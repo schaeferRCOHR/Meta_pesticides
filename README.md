@@ -11,4 +11,4 @@ Written by Ralf B. Schäfer
   
   - Exposure_overview.csv: Table with larger spatial scale studies on comparisons of pesticide exposure predictions with measurements
   
-  - R Script.R: Code for the analysis
+  - Script.R: Code for the analysis
