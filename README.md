@@ -1,4 +1,4 @@
-# Repo for the submitted PrePrint: How pesticide exposure and effects match with the intention of European pesticide regulation – a mini review
+# Repo for the submitted preprint: How pesticide exposure and effects match with the intention of European pesticide regulation – a mini review
 
 This repo contains the R code and data to reproduce the analysis
 
