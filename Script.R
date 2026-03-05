@@ -9,6 +9,8 @@ library(forcats)
 library(metafor)
 library(betareg)
 library(nnet)
+library(purrr)
+
 
 # Set local path to working directory, where files and history is stored
 setwd("Your/path")
@@ -66,16 +68,79 @@ qqnorm(model1_res)
 plot(fitted(model1), model1_res, xlab="Fitted values", ylab="Randomized quantile residuals")
 # no systematic pattern
 
-ggplot(exp5, aes(Observation.unit.new, Threshold_prop, fill = Observation.unit.new)) + 
-      geom_violin(width = 0.9, alpha = 0.25, colour = NA, trim = FALSE) +
-      geom_boxplot(width = 0.15, outlier.shape = NA, alpha = 0.6, colour = "grey20") +
-      geom_point(aes(color = Observation.unit.new), position = position_jitter(width = 0.08, height = 0), 
-      size = 2.4, alpha = 0.9) +
-      scale_y_continuous(labels = label_percent(accuracy = 1), limits = c(0, 1)) +
-      scale_fill_manual(values = c("#1b9e77", "#d95f02", "#7570b3")) +
-      scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3")) +
-      labs(x = NULL, y = "Exceedance of threshold or model prediction") +
-      theme_minimal(base_size = 18) + theme(legend.position = "none")
+# test if their is a relationship between reference type and Threshold_prop
+# create factor with PEC vs. regulatory threshold
+
+exp6 <- exp5 %>%
+			 mutate(Regulatory.threshold.new = recode(Regulatory.threshold, 
+			 "RAC" = "RAC/EQS", 
+			 "EQS" = "RAC/EQS"))
+
+exp7 <- exp6 %>%
+			 mutate(Reference.type = factor(Regulatory.threshold.new, 
+			 levels = c("RAC/EQS", "PEC"))
+			 )
+
+# extract data
+tab <- table(exp7$Reference.type, factor(exp7$Compartment_new))
+
+# correlation between compartments and reference type
+library(vcd)
+assocstats(tab)
+			 
+model2 <- betareg(Threshold_prop ~ Observation.unit.new * Reference.type, data = exp7)
+summary(model2)
+# Not significantly different
+# Almost all RACs and EQS from water, other from soil
+# should be interpreted with care
+
+# Check specifically whether Subsets differ between reference types
+exp7_field <- subset(exp7, Observation.unit.new == "Field sites")
+
+# full model with reference type
+model_2_field <- betareg(
+  Threshold_prop ~ Reference.type,
+  data = exp7_field
+)
+summary(model_2_field)
+# not significant
+
+# Check specifically whether Subsets differ between reference types
+exp7_Pesticides <- subset(exp7, Observation.unit.new == "Pesticides")
+
+# full model with reference type
+model_2_pest <- betareg(
+  Threshold_prop ~ Reference.type,
+  data = exp7_Pesticides
+)
+summary(model_2_pest)
+# significant
+
+ggplot(exp7, aes(Observation.unit.new, Threshold_prop, fill = Observation.unit.new)) +
+  geom_violin(width = 0.9, alpha = 0.25, colour = NA, trim = FALSE) +
+  geom_boxplot(width = 0.15, outlier.shape = NA, alpha = 0.6, colour = "grey20") +
+  geom_point(
+    aes(color = Observation.unit.new,
+        shape = Regulatory.threshold.new),
+    position = position_jitter(width = 0.08, height = 0),
+    size = 2.4,
+    alpha = 0.9
+  ) +
+  scale_y_continuous(labels = label_percent(accuracy = 1), limits = c(0, 1)) +
+  scale_fill_manual(
+    name   = "Analytical level",
+    values = c("#1b9e77", "#d95f02", "#7570b3")
+  ) +
+  scale_color_manual(
+    name   = "Analytical level",
+    values = c("#1b9e77", "#d95f02", "#7570b3")
+  ) +
+  scale_shape_manual(
+    name   = "Reference type",
+    values = c(16, 17)  # e.g. PEC = circle, RAC = triangle
+  ) +  # e.g. circle vs triangle
+  labs(x = NULL, y = "Exceedance of threshold or model prediction") +
+  theme_minimal(base_size = 18)   
    
 #################################   
 # Analysis for biodiversity data  
